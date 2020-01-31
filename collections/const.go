@@ -1,3 +1,4 @@
 package collections
 
-const SCHEMA  = "schema"
+const SCHEMA = "schema"
+const PRIMARY = "primary"
