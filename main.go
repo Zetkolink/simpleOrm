@@ -18,7 +18,7 @@ func main() {
 		Active:    false,
 	}
 
-	st.Update(context.Background(), str)
+	st.GetAll(context.Background(), str)
 }
 
 // Change osm change.

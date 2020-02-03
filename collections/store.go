@@ -3,7 +3,6 @@ package collections
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"strings"
 )
 
@@ -51,7 +50,7 @@ func (s *Store) Delete(ctx context.Context, str interface{}) (id int, err error)
 // Update обновление всех полей записи из структуры с фильтром по первичном ключу.
 func (s *Store) Update(ctx context.Context, str interface{}) (id int, err error) {
 	keys, values := s.getMap(str, false)
-	query := "UPDATE " + s.Collection + " SET " + s.getSetLine(keys) + " WHERE " + s.getPrimaryKey(str) + " = ?"
+	query := "UPDATE " + s.Collection + " SET " + s.getSetLine(keys) + " WHERE " + s.getPrimaryKey(str) + " = $1"
 	err = s.DB.QueryRowContext(ctx, query, append(values, s.getColumnVal(str, s.getPrimaryStructKey(str)))).Scan(&id)
 	if err != nil {
 		return
@@ -59,18 +58,39 @@ func (s *Store) Update(ctx context.Context, str interface{}) (id int, err error)
 	return
 }
 
-// Get получение записи по первичному ключу.
-func (s *Store) Get(ctx context.Context, str interface{}) (interface{}, error) {
-	keys, _ := s.getMap(str, true)
+// Get получение записи по первичному ключу возвращает JSON строку.
+func (s *Store) Get(ctx context.Context, str interface{}) (string, error) {
+	keys := s.getKeys(str)
 	result := ""
-	query := "SELECT " + s.getJsonBuild(keys) + " FROM " + s.Collection + " WHERE " + s.getPrimaryKey(str) + " = ?"
+	query := "SELECT " + s.getJsonBuild(keys) + " FROM " + s.Collection + " WHERE " + s.getPrimaryKey(str) + " = $1"
 	err := s.DB.QueryRowContext(ctx, query, s.getColumnVal(str, s.getPrimaryStructKey(str))).Scan(&result)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	err = json.Unmarshal([]byte(result), str)
+	return result, nil
+}
+
+// GetAll получение записи по первичному ключу возвращает массив JSON объектов.
+func (s *Store) GetAll(ctx context.Context, str interface{}) ([]string, error) {
+	keys := s.getKeys(str)
+	query := "SELECT " + s.getJsonBuild(keys) + " FROM " + s.Collection
+	rows, err := s.DB.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
-	return str, nil
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	arr := make([]string, 0)
+
+	for rows.Next() {
+		var res string
+		if err := rows.Scan(&res); err != nil {
+			return nil, err
+		}
+		arr = append(arr, res)
+	}
+
+	return arr, nil
 }

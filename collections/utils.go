@@ -34,6 +34,22 @@ func (s *Store) getMap(str interface{}, withPrimary bool) ([]string, []interface
 	return keys, values
 }
 
+// getMap конвертации структуры в два массива ключей по тегу SCHEMA и значений.
+func (s *Store) getKeys(str interface{}) []string {
+	sVal := reflect.ValueOf(str)
+	sType := reflect.TypeOf(str)
+	length := sVal.NumField()
+	keys := make([]string, length)
+	j := 0
+	for i := 0; i < sVal.NumField(); i++ {
+		schemaName := sType.Field(i).Tag.Get(SCHEMA)
+		if schemaName != "" {
+			keys[i-j] = schemaName
+		}
+	}
+	return keys
+}
+
 // getColumnVal получение значения свойства структуры.
 func (s *Store) getColumnVal(str interface{}, field string) interface{} {
 	sVal := reflect.ValueOf(str)
