@@ -2,6 +2,7 @@ package collections
 
 import (
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -22,10 +23,8 @@ func (s *Store) getMap(str interface{}, withPrimary bool) ([]string, []interface
 		if schemaName != "" {
 			if primary == "" || withPrimary {
 				field := sVal.Field(i).Interface()
-				if field != 0 && field != "" {
-					keys[i-j] = schemaName
-					values[i-j] = field
-				}
+				keys[i-j] = schemaName
+				values[i-j] = field
 			} else if primary != "" {
 				j++
 			}
@@ -110,6 +109,14 @@ func (s *Store) getSetLine(keys []string) (sets string) {
 		} else {
 			sets += keys[i] + " = ?"
 		}
+	}
+	return
+}
+
+// getPlaceholder получение плейсхолдера.
+func (s *Store) getPlaceholder(keys []string) (sets string) {
+	for i := 2; i <= len(keys); i++ {
+		sets += ",$" + strconv.Itoa(i)
 	}
 	return
 }

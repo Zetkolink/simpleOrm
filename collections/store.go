@@ -29,7 +29,7 @@ func NewStore(collection string, db *sql.DB) *Store {
 // Insert вставка структуры в таблицу.
 func (s *Store) Insert(ctx context.Context, str interface{}) (id int, err error) {
 	keys, values := s.getMap(str, false)
-	query := "INSERT INTO " + s.Collection + "(" + strings.Join(keys, ",") + ") VALUES (?" + strings.Repeat(",?", len(keys)-1) + ") RETURNING id"
+	query := "INSERT INTO " + s.Collection + " (" + strings.Join(keys, ",") + ") VALUES ($1" + s.getPlaceholder(keys) + ") RETURNING id"
 	err = s.DB.QueryRowContext(ctx, query, values...).Scan(&id)
 	if err != nil {
 		return
@@ -39,7 +39,7 @@ func (s *Store) Insert(ctx context.Context, str interface{}) (id int, err error)
 
 // Delete удаление записи по первичному ключу.
 func (s *Store) Delete(ctx context.Context, str interface{}) (id int, err error) {
-	query := "DELETE FROM " + s.Collection + " WHERE " + s.getPrimaryKey(str) + " = ?"
+	query := "DELETE FROM " + s.Collection + " WHERE " + s.getPrimaryKey(str) + " = $1"
 	err = s.DB.QueryRowContext(ctx, query, s.getColumnVal(str, s.getPrimaryStructKey(str))).Scan(&id)
 	if err != nil {
 		return
